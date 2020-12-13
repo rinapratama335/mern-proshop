@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcryptjs";
 
 const userSchema = mongoose.Schema(
   {
@@ -23,6 +24,21 @@ const userSchema = mongoose.Schema(
   },
   { timestamps: true }
 );
+
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return await bcrypt.compare(enteredPassword, this.password); //this.password adalah kolom password (tabel)
+};
+
+//Melakukan enkrpsi password sebelum data di save (pre artinya sebelum)
+userSchema.pre("save", async function (next) {
+  // Jika password tidak diperbaharui (data lain diupdate --> biasanya saat update data)
+  if (!this.isModified("password")) {
+    next();
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+});
 
 const User = mongoose.model("User", userSchema);
 
